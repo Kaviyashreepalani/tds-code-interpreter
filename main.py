@@ -26,14 +26,21 @@ def execute_python_code(code: str):
     try:
         exec(code)
         output = sys.stdout.getvalue()
-        return {"success": True, "output": output}
+        return {
+            "success": True,
+            "output": output
+        }
 
     except Exception:
         output = traceback.format_exc()
-        return {"success": False, "output": output}
+        return {
+            "success": False,
+            "output": output
+        }
 
     finally:
         sys.stdout = old_stdout
+
 
 @app.post("/code-interpreter")
 def code_interpreter(req: CodeRequest):
@@ -47,10 +54,16 @@ def code_interpreter(req: CodeRequest):
 
     tb = result["output"]
 
-    matches = re.findall(r'line (\d+)', tb)
-    lines = [int(x) for x in matches]
+    # Extract ONLY line numbers from the user's code
+    error_lines = []
+
+    for line in tb.splitlines():
+        if 'File "<string>", line' in line:
+            match = re.search(r'line (\d+)', line)
+            if match:
+                error_lines.append(int(match.group(1)))
 
     return {
-        "error": lines,
+        "error": error_lines,
         "result": tb
     }
